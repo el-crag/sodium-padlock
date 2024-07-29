@@ -1,8 +1,9 @@
 #include "Padlock.hpp"
+#include <Arduino.h>
 
-static const char * TAG = "Hensor";
+static const char * TAG = "Lock";
 
-Padlock * Padlock::security = nullptr;
+Padlock * Padlock::padlock = nullptr;
 
 Padlock::Padlock() {
 	this->clear();
@@ -13,7 +14,7 @@ inline unsigned long long Padlock::getMessageLength() {
 }
 
 bool Padlock::hasSecurity() const {
-	if (strlen(this->credentials.ciphertext) > 0) {
+	if (strlen(this->credential.ciphertext) > 0) {
 		return true;
 	}
 
@@ -21,8 +22,8 @@ bool Padlock::hasSecurity() const {
 }
 
 void Padlock::clear() {
-	sodium_memzero(this->credentials.ciphertext, crypto_secretbox_MACBYTES + this->mlen);
-	sodium_memzero(this->credentials.nonce, crypto_secretbox_NONCEBYTES);
+	sodium_memzero(this->credential.ciphertext, crypto_secretbox_MACBYTES + this->mlen);
+	sodium_memzero(this->credential.nonce, crypto_secretbox_NONCEBYTES);
 }
 
 bool Padlock::pass(const char * newKey, const size_t len, bool settingKey) {
@@ -47,7 +48,7 @@ bool Padlock::pass(const char * newKey, const size_t len, bool settingKey) {
 		return false;
 	}
 
-	if (crypto_secretbox_open_easy(decrypted, (const unsigned char*) this->ciphertext.c_str(), crypto_secretbox_MACBYTES + this->mlen, (const unsigned char*) this->nonce.c_str(), key) != 0) {
+	if (crypto_secretbox_open_easy(decrypted, (const unsigned char*) this->credential.ciphertext, crypto_secretbox_MACBYTES + this->mlen, (const unsigned char*) this->credential.nonce, key) != 0) {
 		// message forged!
 		ESP_LOGI(TAG, "Message forged");
 		return false;
@@ -83,14 +84,14 @@ void Padlock::setKey(const char * newKey, const size_t len) {
 
 inline void Padlock::getCredentials(char * ciphertext, char * nonce) const {
 	// Just copying
-	memcpy(ciphertext, (const char*) this->credentials.ciphertext, crypto_secretbox_MACBYTES + this->mlen);
-	memcpy(nonce, (const char*) this->credentials.nonce, crypto_secretbox_NONCEBYTES);
+	memcpy(ciphertext, (const char*) this->credential.ciphertext, crypto_secretbox_MACBYTES + this->mlen);
+	memcpy(nonce, (const char*) this->credential.nonce, crypto_secretbox_NONCEBYTES);
 }
 
 inline void Padlock::setCredentials(const char * ciphertext, const char * nonce) {
 	// Saving without care of null terminator because we have the exact space
-	memcpy(this->credentials.ciphertext, ciphertext, crypto_secretbox_MACBYTES + this->mlen);
-	memcpy(this->credentials.nonce, nonce, crypto_secretbox_NONCEBYTES);
+	memcpy(this->credential.ciphertext, ciphertext, crypto_secretbox_MACBYTES + this->mlen);
+	memcpy(this->credential.nonce, nonce, crypto_secretbox_NONCEBYTES);
 }
 
 Padlock * Padlock::getInstance() {

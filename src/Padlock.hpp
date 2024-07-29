@@ -23,21 +23,23 @@
 #include <sodium.h>
 
 #ifndef PADLOCK_CLEAR_TEXT
-#define PADLOCK_CLEAR_TEXT "padlock"
+	#define PADLOCK_CLEAR_TEXT "padlock"
+	#define PADLOCK_CLEAR_TEXT_LENGTH 7
 #endif
+
 
 class Padlock {
 	protected:
 		Padlock();
 
 		const unsigned char * message = (const unsigned char*) PADLOCK_CLEAR_TEXT;
-		unsigned long long mlen = strlen((char*) message);
+		unsigned long long mlen = PADLOCK_CLEAR_TEXT_LENGTH;
 
 		static Padlock * padlock;
 
 		struct Credential {
-			char[crypto_secretbox_MACBYTES + mlen] ciphertext;
-			char[crypto_secretbox_NONCEBYTES] nonce;
+			char ciphertext[crypto_secretbox_MACBYTES + PADLOCK_CLEAR_TEXT_LENGTH];
+			char nonce[crypto_secretbox_NONCEBYTES];
 		} credential;
 
 	public:
